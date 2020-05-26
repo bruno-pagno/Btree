@@ -4,22 +4,22 @@
 #define M 3
 
 typedef struct rrn_nusp {
-		int nusp;
-		long RRN;
+	int nusp;
+	long RRN;
 } RRN_NUSP;
 
 typedef struct _node {
-	int         nElementos;         // numero de elementos inseridos < M
-	RRN_NUSP    rrn_nusps[M - 1];   // nusps e rrn dos elementos
-	struct _node *ponteiros[M];     // ponteiros dos filhos
+	int	nElementos;				// numero de elementos inseridos < M
+	RRN_NUSP rrn_nusps[M - 1];	// nusps e rrn dos elementos
+	struct _node *ponteiros[M];	// ponteiros dos filhos
 } node;
 
 // Defines utilizadas na insercao
 #define chave_duplicada		-1
-#define sucesso 		    -2
-#define realizar_insercao 	-3
-#define LessKeys 		    -4
-#define SearchFailure 	    -5
+#define sucesso				-2
+#define realizar_insercao	-3
+#define LessKeys			-4
+#define SearchFailure		-5
 
 int showMenu();
 void insert(int key);
