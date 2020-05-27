@@ -1,9 +1,9 @@
-#include "stdio.h"
-#include "stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <btree.h>
 
 // Raiz da árvore B
-node *root = NULL;
+NODE *root = NULL;
 // Contador global para indicar o RRN atual
 long RRN = 0;
 
@@ -16,111 +16,109 @@ int main() {
 		exit(0);
 	}
 
-	int chave = 0;
-	int choice = 0;
-	while (1) {
-		choice = showMenu();
-		switch (choice) {
+	int chave = 0, opcao = 0;
+	while(opcao != 5) {
+		opcao = showMenu();
+		switch(opcao) {
 			case 1: // Inserir nó
-				printf("Digite o numero USP que deseja inserir: ");
+				printf("Digite o número USP que deseja inserir: ");
 				scanf("%d", &chave); 
 				insert(chave);
 				break;
-
 			case 2:  // Deletar Nó
-				printf("Digite o numero USP que deseja deletar: ");
+				printf("Digite o número USP que deseja remover: ");
 				scanf("%d", &chave); 
-						// DelNode(chave);
+				// delNode(chave);
 				break;
 			case 3: // Buscar nó
-				printf("Digite o numero USP que deseja buscar: ");
+				printf("Digite o número USP que deseja buscar: ");
 				scanf("%d", &chave); 
 				RRN_NUSP aux;
 				aux.nusp = chave;
 				search(aux);
 				break;
 			case 4: // Mostrar árvore
-				printf("Btree is :\n\n");
+				printf("A Btree está assim:\n\n");
 				display(root, 0);
 				break;
-			default:
-				printf("Saindo ...\n");
 		}
 	}
+	printf("Saindo...\n");
 	
 	// Dar free em tudo no fim da execução
 	fclose(arqDados);
 	fclose(arqIndex);
-	printf("Fim da execução do programa ... \n");
+	printf("Fim da execução do programa...\n");
 	return 0;
 }
 
 int showMenu() {
-	printf("\t|=========================================|\n");
-	printf("\t|       Qual Operação deseja Realizar ?   |\n");
-	printf("\t|1 - Inserir novos registros na árvore    |\n");
-	printf("\t|2 - Deletar nó                           |\n");
-	printf("\t|3 - Buscar                               |\n");
-	printf("\t|4 - Mostrar árvore                       |\n");
-	printf("\t|5 - Sair do programa                     |\n");
-	printf("\t|=========================================|\n");
-
-	printf("\tOpção: ");
 	int res = 0;
-	scanf("%d", &res);
+	while(res < 1 || res > 5) {
+		printf("\n");
+		printf("\t|======================================|\n");
+		printf("\t|    Qual Operação deseja realizar?    |\n");
+		printf("\t|1 - Inserir novo aluno                |\n");
+		printf("\t|2 - Remover aluno                     |\n");
+		printf("\t|3 - Buscar por NUSP                   |\n");
+		printf("\t|4 - Mostrar árvore                    |\n");
+		printf("\t|5 - Sair do programa                  |\n");
+		printf("\t|======================================|\n");
+		printf("\tOpção: ");
+		scanf("%d", &res);
+	}
 	return res;
 }
 
-void insert(int key) {
-	RRN_NUSP new;
-		new.nusp = key;		// nusp do novo aluno
-		new.RRN = RRN++;	// rrn do arquivo de dados
+void insert(int nusp) {
+	RRN_NUSP novo;
+	novo.nusp = nusp;	// nusp do novo aluno
+	novo.RRN = RRN++;	// rrn do arquivo de dados
 
-		node *newnode;		// novo node, se necessario
-		RRN_NUSP upKey;		// chave-pai
-		int value = ins(root, new, &upKey, &newnode);
-		
-		if (value == chave_duplicada)
-			printf("Chave duplicada\n");
-		
-		if (value == realizar_insercao) { // Primeiro nó
-			node *uproot = root;
-			root = (node*) malloc(sizeof(node));
-			root->nElementos = 1;
-			root->rrn_nusps[0] = upKey;
-			root->ponteiros[0] = uproot;
-			root->ponteiros[1] = newnode;
-		}
+	NODE *novoNode;		// novo node, se necessario
+	RRN_NUSP chaveCima;		// chave-pai
+	int retorno = _insert(root, novo, &chaveCima, &novoNode);
+	
+	if (retorno == CHAVE_DUPLICADA)
+		printf("Chave duplicada\n");
+	
+	if (retorno == REALIZAR_INSERCAO) { // Primeiro nó
+		NODE *upRoot = root;
+		root = (NODE*) malloc(sizeof(NODE));
+		root->nElementos = 1;
+		root->rrn_nusps[0] = chaveCima;
+		root->ponteiros[0] = upRoot;
+		root->ponteiros[1] = novoNode;
 	}
+}
 
+int _insert(NODE *root, RRN_NUSP rrn_nusp, RRN_NUSP *chaveCima, NODE **novoNode) {
+	NODE *novoPtr = NULL, *ultimoPtr = NULL;
+	int pos = 0, i = 0, nElementos = 0, splitPos = 0;
+	RRN_NUSP novaChave, ultimaChave;
 
-	int ins(node *root, RRN_NUSP key, RRN_NUSP *upKey, node **newnode) {
-		node *newPtr, *lastPtr;
-		int pos, i, nElementos, splitPos;
-		RRN_NUSP newKey, lastKey;
+	int retorno = 0;
 
-		int value;
-
-	if (root == NULL) {		// node mandado eh vazio
-		*newnode = NULL;
-		*upKey = key;
-		return realizar_insercao;
+	if (!root) {		// node mandado eh vazio
+		*novoNode = NULL;
+		*chaveCima = rrn_nusp;
+		return REALIZAR_INSERCAO;
 	}
 
 	nElementos = root->nElementos;
-	long RRNaux;
-	pos = searchPos(key, root->rrn_nusps, nElementos, &RRNaux); // Encontra a posição ideal para o NUSP dentro do nó
+	long RRNaux = 0;
+	pos = searchPos(rrn_nusp, root->rrn_nusps, nElementos, &RRNaux);	// Encontra a posição ideal para o NUSP dentro do nó
 
-	if (pos < nElementos && key.nusp == root->rrn_nusps[pos].nusp) // Nesse caso já existe
-		return chave_duplicada;
+	if (pos < nElementos && rrn_nusp.nusp == root->rrn_nusps[pos].nusp)	// Nesse caso já existe
+		return CHAVE_DUPLICADA;
 
-	value = ins(root->ponteiros[pos], key, &newKey, &newPtr); // Desce para o próximo nível recursivamente
+	retorno = _insert(root->ponteiros[pos], rrn_nusp, &novaChave, &novoPtr);		// Desce para o próximo nível recursivamente
 	
-	if (value != realizar_insercao) return value; // nao insere nesse node
+	if (retorno != REALIZAR_INSERCAO) return retorno;	// nao insere nesse node
 
 	/*Se o número de NUSPS do NODE for menor que M - 1*/
 	if (nElementos < M - 1) {
-		pos = searchPos(newKey, root->rrn_nusps, nElementos, &RRNaux);
+		pos = searchPos(novaChave, root->rrn_nusps, nElementos, &RRNaux);
 		// shift dos elementos
 		for (i = nElementos; i > pos; i--) {
 			root->rrn_nusps[i] = root->rrn_nusps[i - 1];
@@ -128,47 +126,47 @@ void insert(int key) {
 		}
 		
 		// chave inserida na posicao
-		root->rrn_nusps[pos] = newKey;
-		root->ponteiros[pos + 1] = newPtr;
-		root->nElementos++;     // incrementa o contador
-		return sucesso;
+		root->rrn_nusps[pos] = novaChave;
+		root->ponteiros[pos + 1] = novoPtr;
+		root->nElementos++;		// incrementa o contador
+		return SUCESSO;
 	}
 
 	 /*Se o nó está cheio e a posição do elemento que deseja inserir é a ultima*/
 	if (pos == M - 1) {
-		lastKey = newKey;
-		lastPtr = newPtr;
+		ultimaChave = novaChave;
+		ultimoPtr = novoPtr;
 	} else { 
 		/* Neste caso o nó está cheio, mas a posição que deseja inserir não é a ultima*/   
-		lastKey = root->rrn_nusps[M - 2];
-		lastPtr = root->ponteiros[M - 1];
+		ultimaChave = root->rrn_nusps[M - 2];
+		ultimoPtr = root->ponteiros[M - 1];
 
 		for (i = M - 2; i > pos; i--) {
 			root->rrn_nusps[i] = root->rrn_nusps[i - 1];
 			root->ponteiros[i + 1] = root->ponteiros[i];
 		}
-		root->rrn_nusps[pos] = newKey;
-		root->ponteiros[pos + 1] = newPtr;
+		root->rrn_nusps[pos] = novaChave;
+		root->ponteiros[pos + 1] = novoPtr;
 	}
 
-	splitPos = (M - 1) / 2;                                   /* Posição do nó médio */
-	(*upKey) = root->rrn_nusps[splitPos];
-	(*newnode) = (node*) malloc(sizeof(node));               // node da direita
-	root->nElementos = splitPos;                              /* No. of keys for left splitted node */
-	(*newnode)->nElementos = M - 1 - splitPos;               /*No. of keys for right splitted node*/
+	splitPos = (M - 1) / 2;							/* Posição do nó médio */
+	(*chaveCima) = root->rrn_nusps[splitPos];
+	(*novoNode) = (NODE*) malloc(sizeof(NODE));		// node da direita
+	root->nElementos = splitPos;					// numero de chaves (code esquerdo)
+	(*novoNode)->nElementos = M - 1 - splitPos;		// numero de chaves (code direito)
 	
-	for (i = 0; i < (*newnode)->nElementos; i++) {
-		(*newnode)->ponteiros[i] = root->ponteiros[i + splitPos + 1];	
-		if (i < (*newnode)->nElementos - 1)
-			(*newnode)->rrn_nusps[i] = root->rrn_nusps[i + splitPos + 1];
+	for (i = 0; i < (*novoNode)->nElementos; i++) {
+		(*novoNode)->ponteiros[i] = root->ponteiros[i + splitPos + 1];	
+		if (i < (*novoNode)->nElementos - 1)
+			(*novoNode)->rrn_nusps[i] = root->rrn_nusps[i + splitPos + 1];
 
-		else (*newnode)->rrn_nusps[i] = lastKey;
+		else (*novoNode)->rrn_nusps[i] = ultimaChave;
 	}
-	(*newnode)->ponteiros[(*newnode)->nElementos] = lastPtr;
-	return realizar_insercao;
+	(*novoNode)->ponteiros[(*novoNode)->nElementos] = ultimoPtr;
+	return REALIZAR_INSERCAO;
 }
 
-void display(node *ptr, int blanks) {
+void display(NODE *ptr, int blanks) {
 	if (ptr) {
 		int i;
 		for (i = 1; i <= blanks; i++)
@@ -183,7 +181,7 @@ void display(node *ptr, int blanks) {
 
 void search(RRN_NUSP key) {
 	int pos, i, n;
-	node *ptr = root;
+	NODE *ptr = root;
 	// printf("Search path:\n");
 	while (ptr) {
 		n = ptr->nElementos;
@@ -208,22 +206,22 @@ int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
 		pos++;
 	// if(pos < n){
 	// 	*RRNFound = key_arr[pos].RRN;
-		// } else {
-		//         *RRNFound = -1;
-		// }
+	// } else {
+	// 	*RRNFound = -1;
+	// }
 	*RRNFound = (pos < n) ? key_arr[pos].RRN : -1;
 	return pos;
 }
 
 // void DelNode(int key) {
-// 	node *uproot;
+// 	NODE *uproot;
 // 	KeyStatus value;
 // 	value = del(root, key);
 // 	switch (value) {
-// 		case SearchFailure:
+// 		case FALHA_BUSCA:
 // 			printf("Key %d is not available\n", key);
 // 			break;
-// 		case LessKeys:
+// 		case ULTIMAS_CHAVES:
 // 			uproot = root;
 // 			root = root->ponteiros[0];
 // 			free(uproot);
@@ -233,15 +231,15 @@ int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
 // 	}/*End of switch*/
 // }/*End of delnode()*/
 // 
-// KeyStatus del(node *ptr, int key) {
+// KeyStatus del(NODE *ptr, int key) {
 // 	int pos, i, pivot, n, min;
 // 	int *key_arr;
 // 	KeyStatus value;
-// 	node **p, *lptr, *rptr;
+// 	NODE **p, *lptr, *rptr;
 // 
 // 	if (ptr == NULL)
-// 		return SearchFailure;
-// 	/*Assigns values of node*/
+// 		return FALHA_BUSCA;
+// 	/*Assigns values of NODE*/
 // 	n = ptr->n;
 // 	key_arr = ptr->nusps;
 // 	p = ptr->ponteiros;
@@ -252,18 +250,18 @@ int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
 // 	// p is a leaf
 // 	if (p[0] == NULL) {
 // 		if (pos == n || key < key_arr[pos])
-// 			return SearchFailure;
+// 			return FALHA_BUSCA;
 // 		/*Shift keys and pointers left*/
 // 		for (i = pos + 1; i < n; i++) {
 // 			key_arr[i - 1] = key_arr[i];
 // 			p[i] = p[i + 1];
 // 		}
-// 		return --ptr->n >= (ptr == root ? 1 : min) ? Success : LessKeys;
+// 		return --ptr->n >= (ptr == root ? 1 : min) ? SUCESSO : ULTIMAS_CHAVES;
 // 	}/*End of if */
 // 
 // 	//if found key but p is not a leaf
 // 	if (pos < n && key == key_arr[pos]) {
-// 		node *qp = p[pos], *qp1;
+// 		NODE *qp = p[pos], *qp1;
 // 		int nkey;
 // 		while (1) {
 // 		nkey = qp->n;
@@ -277,14 +275,14 @@ int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
 // 	}/*End of if */
 // 	value = del(p[pos], key);
 // 
-// 	if (value != LessKeys)
+// 	if (value != ULTIMAS_CHAVES)
 // 		return value;
 // 
 // 	if (pos > 0 && p[pos - 1]->n > min) {
-// 		pivot = pos - 1; /*pivot for left and right node*/
+// 		pivot = pos - 1; /*pivot for left and right NODE*/
 // 		lptr = p[pivot];
 // 		rptr = p[pos];
-// 		/*Assigns values for right node*/
+// 		/*Assigns values for right NODE*/
 // 		rptr->ponteiros[rptr->n + 1] = rptr->ponteiros[rptr->n];
 // 		for (i = rptr->n; i>0; i--) {
 // 			rptr->nusps[i] = rptr->nusps[i - 1];
@@ -294,14 +292,14 @@ int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
 // 		rptr->nusps[0] = key_arr[pivot];
 // 		rptr->ponteiros[0] = lptr->ponteiros[lptr->n];
 // 		key_arr[pivot] = lptr->nusps[--lptr->n];
-// 		return Success;
+// 		return SUCESSO;
 // 	}/*End of if */
 // 	//if (posn > min)
 // 	if (pos < n && p[pos + 1]->n > min) {
-// 		pivot = pos; /*pivot for left and right node*/
+// 		pivot = pos; /*pivot for left and right NODE*/
 // 		lptr = p[pivot];
 // 		rptr = p[pivot + 1];
-// 		/*Assigns values for left node*/
+// 		/*Assigns values for left NODE*/
 // 		lptr->nusps[lptr->n] = key_arr[pivot];
 // 		lptr->ponteiros[lptr->n + 1] = rptr->ponteiros[0];
 // 		key_arr[pivot] = rptr->nusps[0];
@@ -312,7 +310,7 @@ int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
 // 			rptr->ponteiros[i] = rptr->ponteiros[i + 1];
 // 		}/*End of for*/
 // 		rptr->ponteiros[rptr->n] = rptr->ponteiros[rptr->n + 1];
-// 		return Success;
+// 		return SUCESSO;
 // 	}/*End of if */
 // 
 // 	if (pos == n)
@@ -335,7 +333,7 @@ int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
 // 		key_arr[i - 1] = key_arr[i];
 // 		p[i] = p[i + 1];
 // 	}
-// 	return --ptr->n >= (ptr == root ? 1 : min) ? Success : LessKeys;
+// 	return --ptr->n >= (ptr == root ? 1 : min) ? SUCESSO : ULTIMAS_CHAVES;
 // }/*End of del()*/
 
 void eatline(void) {

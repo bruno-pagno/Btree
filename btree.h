@@ -12,32 +12,32 @@ typedef struct _node {
 	int	nElementos;				// numero de elementos inseridos < M
 	RRN_NUSP rrn_nusps[M - 1];	// nusps e rrn dos elementos
 	struct _node *ponteiros[M];	// ponteiros dos filhos
-} node;
+} NODE;
 
 // Defines utilizadas na insercao
-#define chave_duplicada		-1
-#define sucesso				-2
-#define realizar_insercao	-3
-#define LessKeys			-4
-#define SearchFailure		-5
+#define CHAVE_DUPLICADA		-1
+#define SUCESSO				-2
+#define REALIZAR_INSERCAO	-3
+#define ULTIMAS_CHAVES		-4
+#define FALHA_BUSCA			-5
 
 int showMenu();
-void insert(int key);
-void display(node *root, int);
-void DelNode(int x);
-void search(RRN_NUSP key);
-int ins(node *r, RRN_NUSP x, RRN_NUSP* y, node** u);
-int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound);
-// KeyStatus del(node *r, int x);
-void eatline(void);
-void inorder(node *ptr);
-int totalKeys(node *ptr);
-void printTotal(node *ptr);
-int getMin(node *ptr);
-int getMax(node *ptr);
-void getMinMax(node *ptr);
-int max(int first, int second, int third);
-int maxLevel(node *ptr);
-void printMaxLevel(node *ptr);
+void insert(int);
+void display(NODE *, int);
+void delNode(int);
+void search(RRN_NUSP);
+int _insert(NODE *, RRN_NUSP, RRN_NUSP *, NODE **);
+int searchPos(RRN_NUSP,RRN_NUSP *, int, long *);
+// KeyStatus del(NODE *r, int x);
+void eatline();
+void inorder(NODE *);
+int totalKeys(NODE *);
+void printTotal(NODE *);
+int getMin(NODE *);
+int getMax(NODE *);
+void getMinMax(NODE *);
+int max(int, int, int);
+int maxLevel(NODE *);
+void printMaxLevel(NODE *);
 
 #endif
