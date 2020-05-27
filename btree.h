@@ -37,12 +37,13 @@ void removeAluno();
 void printAluno(ALUNO a);
 
 void insert(int);
-void display(NODE *, int);
-void delNode(int);
-long search(RRN_NUSP);
 int _insert(NODE *, RRN_NUSP, RRN_NUSP *, NODE **);
+void display(NODE *, int);
+long search(RRN_NUSP);
 int searchPos(RRN_NUSP,RRN_NUSP *, int, long *);
-/* KeyStatus del(NODE *r, int x); */
+/*
+void delNode(int);
+KeyStatus del(NODE *r, int x);
 void eatline();
 void inorder(NODE *);
 int totalKeys(NODE *);
@@ -53,5 +54,6 @@ void getMinMax(NODE *);
 int max(int, int, int);
 int maxLevel(NODE *);
 void printMaxLevel(NODE *);
+*/
 
 #endif

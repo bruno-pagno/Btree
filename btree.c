@@ -15,7 +15,7 @@ int main() {
 	}
 
 	/* Variaveis auxiliares */
-	int chave = 0, opcao = 0;
+	int opcao = 0;
 	while(opcao != 5) {
 		opcao = showMenu();
 		switch(opcao) {
@@ -34,6 +34,7 @@ int main() {
 				break;
 		}
 	}
+	
 	printf("Saindo...\n");
 	
 	/* dar free em tudo no fim da execução */
@@ -43,9 +44,10 @@ int main() {
 	return 0;
 }
 
+/* exibe o menu com as opcoes */
 int showMenu() {
 	int res = 0;
-	while(res < 1 || res > 5) {
+	while(res < 1 || res > 5) {		/* evita opcoes invalidas */
 		printf("\n");
 		printf("|======================================|\n");
 		printf("|    Qual Operação deseja realizar?    |\n");
@@ -61,6 +63,7 @@ int showMenu() {
 	return res;
 }
 
+/* le os dados de um aluno */
 ALUNO scanAluno() {
 	ALUNO newAluno;
 
@@ -83,6 +86,7 @@ ALUNO scanAluno() {
 	return newAluno;
 }
 
+/* das inicio a insercao */
 void insertAluno(FILE *arqDados) {
 	ALUNO newAluno = scanAluno();
 	insert(newAluno.NUSP);
@@ -91,12 +95,13 @@ void insertAluno(FILE *arqDados) {
 	fwrite(&newAluno, 1, sizeof(ALUNO), arqDados);
 }
 
+/* da inicio a busca */
 void searchAluno(FILE *arqDados) {
 	int chave = 0, rrnAux = 0;
 	ALUNO newAluno;
 
 	printf("\n\tDigite o NUSP que deseja buscar: ");
-	scanf("%d", &chave); 
+	scanf("%d", &chave);
 	RRN_NUSP aux;
 	aux.nusp = chave;
 	rrnAux = search(aux);
@@ -111,21 +116,24 @@ void searchAluno(FILE *arqDados) {
 		printf("O Nusp buscado não existe na árvore\n");
 }
 
+/* da inicio a remocao */
 void removeAluno() {
 	int chave = 0;
 	printf("Digite o número USP que deseja remover: ");
-	scanf("%d", &chave); 
+	scanf("%d", &chave);
 	/* delNode(chave); */
 }
 
-void printAluno(ALUNO a) {
-	printf("\tINFORMAÇÕES DO ALUNO\n");
-	printf("\t    NUSP: %d\n", a.NUSP);
-	printf("\t    Nome Completo: %s %s\n", a.nome, a.sobrenome);
-	printf("\t    Curso: %s\n", a.curso);
-	printf("\t    Nota: %.2f\n", a.nota);
+/* exibe o aluno */
+void printAluno(ALUNO aluno) {
+	printf("\t    INFORMAÇÕES DO ALUNO\n");
+	printf("\tNUSP: %d\n", aluno.NUSP);
+	printf("\tNome Completo: %s %s\n", aluno.nome, aluno.sobrenome);
+	printf("\tCurso: %s\n", aluno.curso);
+	printf("\tNota: %.2f\n", aluno.nota);
 }
 
+/* recebe o nusp do aluno e insere */
 void insert(int nusp) {
 	RRN_NUSP novo;
 	novo.nusp = nusp;	/* nusp do novo aluno */
@@ -148,31 +156,29 @@ void insert(int nusp) {
 	}
 }
 
+/* funcao interna que insere na arvore */
 int _insert(NODE *root, RRN_NUSP rrn_nusp, RRN_NUSP *chaveCima, NODE **novoNode) {
-	NODE *novoPtr = NULL, *ultimoPtr = NULL;
-	int pos = 0, i = 0, nElementos = 0, splitPos = 0;
-	RRN_NUSP novaChave, ultimaChave;
-
-	int retorno = 0;
-
 	if (!root) {		/* node mandado eh vazio */
 		*novoNode = NULL;
 		*chaveCima = rrn_nusp;
 		return REALIZAR_INSERCAO;
 	}
 
-	nElementos = root->nElementos;
+	int nElementos = root->nElementos;
 	long RRNaux = 0;
-	pos = searchPos(rrn_nusp, root->rrn_nusps, nElementos, &RRNaux);	/* Encontra a posição ideal para o NUSP dentro do nó */
+	int pos = searchPos(rrn_nusp, root->rrn_nusps, nElementos, &RRNaux);	/* Encontra a posição ideal para o NUSP dentro do nó */
 
-	if (pos < nElementos && rrn_nusp.nusp == root->rrn_nusps[pos].nusp)	/* Nesse caso já existe */
+	if(pos < nElementos && rrn_nusp.nusp == root->rrn_nusps[pos].nusp)	/* Nesse caso já existe */
 		return CHAVE_DUPLICADA;
 
-	retorno = _insert(root->ponteiros[pos], rrn_nusp, &novaChave, &novoPtr);		/* Desce para o próximo nível recursivamente */
+	RRN_NUSP novaChave;
+	NODE *novoPtr = NULL;
+	int retorno = _insert(root->ponteiros[pos], rrn_nusp, &novaChave, &novoPtr);		/* Desce para o próximo nível recursivamente */
 	
 	if (retorno != REALIZAR_INSERCAO) return retorno;	/* nao insere nesse node */
 
 	/*Se o número de NUSPS do NODE for menor que M - 1*/
+	int i = 0;
 	if (nElementos < M - 1) {
 		pos = searchPos(novaChave, root->rrn_nusps, nElementos, &RRNaux);
 		/* shift dos elementos */
@@ -188,12 +194,14 @@ int _insert(NODE *root, RRN_NUSP rrn_nusp, RRN_NUSP *chaveCima, NODE **novoNode)
 		return SUCESSO;
 	}
 
-	 /*Se o nó está cheio e a posição do elemento que deseja inserir é a ultima*/
+	/*Se o nó está cheio e a posição do elemento que deseja inserir é a ultima*/
+	RRN_NUSP ultimaChave;
+	NODE *ultimoPtr = NULL;
 	if (pos == M - 1) {
 		ultimaChave = novaChave;
 		ultimoPtr = novoPtr;
-	} else { 
-		/* Neste caso o nó está cheio, mas a posição que deseja inserir não é a ultima*/   
+	} else {
+		/* Neste caso o nó está cheio, mas a posição que deseja inserir não é a ultima*/  
 		ultimaChave = root->rrn_nusps[M - 2];
 		ultimoPtr = root->ponteiros[M - 1];
 
@@ -205,7 +213,7 @@ int _insert(NODE *root, RRN_NUSP rrn_nusp, RRN_NUSP *chaveCima, NODE **novoNode)
 		root->ponteiros[pos + 1] = novoPtr;
 	}
 
-	splitPos = (M - 1) / 2;							/* Posição do nó médio */
+	int splitPos = (M - 1) / 2;							/* Posição do nó médio */
 	(*chaveCima) = root->rrn_nusps[splitPos];
 	(*novoNode) = (NODE*) malloc(sizeof(NODE));		/* node da direita */
 	root->nElementos = splitPos;					/* numero de chaves (code esquerdo) */
@@ -222,42 +230,46 @@ int _insert(NODE *root, RRN_NUSP rrn_nusp, RRN_NUSP *chaveCima, NODE **novoNode)
 	return REALIZAR_INSERCAO;
 }
 
-void display(NODE *ptr, int blanks) {
-	if (ptr) {
+/* exibe a arvore na tela */
+void display(NODE *node, int espacos) {
+	if (node) {
 		int i;
-		for (i = 1; i <= blanks; i++)
+		for (i = 1; i <= espacos; i++)
 			printf(" ");
-		for (i = 0; i < ptr->nElementos; i++)
-			printf("%d(%ld) ", ptr->rrn_nusps[i].nusp, ptr->rrn_nusps[i].RRN);
+		
+		for (i = 0; i < node->nElementos; i++)
+			printf("%d(%ld) ", node->rrn_nusps[i].nusp, node->rrn_nusps[i].RRN);
 		printf("\n");
-		for (i = 0; i <= ptr->nElementos; i++)
-			display(ptr->ponteiros[i], blanks + 10);
+
+		for (i = 0; i <= node->nElementos; i++)
+			display(node->ponteiros[i], espacos + 10);
 	}
 }
 
-long search(RRN_NUSP key) {
-	int pos = 0;
-	NODE *ptr = root;
+/* busca o node que pode conter o aluno */
+long search(RRN_NUSP chave) {
+	NODE *node = root;
 	/* printf("Search path:\n"); */
-	while (ptr) {
-		int n = ptr->nElementos;
+	while (node) {
+		int n = node->nElementos;
 		long RRNaux = 0;
-		pos = searchPos(key, ptr->rrn_nusps, n, &RRNaux);
-		if (pos < n && key.nusp == ptr->rrn_nusps[pos].nusp) {
-			/* printf("Nusp %d achado na posição %d, com RRN %ld do ultimo nó mostrado\n", key.nusp, i, RRNaux); */
+		int pos = searchPos(chave, node->rrn_nusps, n, &RRNaux);
+		if (pos < n && chave.nusp == node->rrn_nusps[pos].nusp) {
+			/* printf("Nusp %d achado na posição %d, com RRN %ld do ultimo nó mostrado\n", chave.nusp, i, RRNaux); */
 			return RRNaux;
 		}
-		ptr = ptr->ponteiros[pos];
+		node = node->ponteiros[pos];
 	}
 	return -1;
 }
 
-int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
+/* busca internamente o nusp */
+int searchPos(RRN_NUSP chave, RRN_NUSP *chaves, int n, long *rrnEncontrado) {
 	int pos = 0;
-	while (pos < n && key.nusp > key_arr[pos].nusp)
+	while (pos < n && chave.nusp > chaves[pos].nusp)
 		pos++;
 		
-	*RRNFound = (pos < n) ? key_arr[pos].RRN : -1;
+	*rrnEncontrado = (pos < n) ? chaves[pos].RRN : -1;
 	return pos;
 }
 
@@ -376,15 +388,16 @@ int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
 /* 		lptr->ponteiros[lptr->n + 2 + i] = rptr->ponteiros[i + 1]; */
 /* 	} */
 /* 	lptr->n = lptr->n + rptr->n + 1; */
-/* 	free(rptr); /*Remove right node*/ 
+/* 	free(rptr); /*Remove right node*/
 /* 	for (i = pos + 1; i < n; i++) { */
 /* 		key_arr[i - 1] = key_arr[i]; */
 /* 		p[i] = p[i + 1]; */
 /* 	} */
 /* 	return --ptr->n >= (ptr == root ? 1 : min) ? SUCESSO : ULTIMAS_CHAVES; */
-/* }/*End of del()*/ 
-
+/* }/*End of del()*/
+/*
 void eatline(void) {
 	char c;
 	while ((c = getchar()) != '\n');
 }
+*/
