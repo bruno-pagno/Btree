@@ -14,6 +14,14 @@ typedef struct _node {
 	struct _node *ponteiros[M];	// ponteiros dos filhos
 } NODE;
 
+typedef struct aluno {			// Struct do Aluno
+	char nome[15];
+	char sobrenome[15];
+	char curso[15];
+	int NUSP;
+	float nota;
+} ALUNO;
+
 // Defines utilizadas na insercao
 #define CHAVE_DUPLICADA		-1
 #define SUCESSO				-2
@@ -22,10 +30,11 @@ typedef struct _node {
 #define FALHA_BUSCA			-5
 
 int showMenu();
+void printaAluno(ALUNO a);
 void insert(int);
 void display(NODE *, int);
 void delNode(int);
-void search(RRN_NUSP);
+long search(RRN_NUSP);
 int _insert(NODE *, RRN_NUSP, RRN_NUSP *, NODE **);
 int searchPos(RRN_NUSP,RRN_NUSP *, int, long *);
 // KeyStatus del(NODE *r, int x);

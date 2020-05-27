@@ -16,14 +16,36 @@ int main() {
 		exit(0);
 	}
 
+	// Variaveis auxiliares
 	int chave = 0, opcao = 0;
+	long rrnAux = 0;
+	ALUNO newAluno;
+
 	while(opcao != 5) {
 		opcao = showMenu();
 		switch(opcao) {
 			case 1: // Inserir nó
-				printf("Digite o número USP que deseja inserir: ");
-				scanf("%d", &chave); 
-				insert(chave);
+				printf("Digite os dados do aluno que deseja Inserir:\n");
+				printf("\tDigite o NUSP do aluno: ");
+				scanf("%d", &newAluno.NUSP);
+				printf("\tDigite o nome do aluno: ");
+				scanf(" %[^\n]s", newAluno.nome);
+				printf("\tDigite o sobrenome do aluno: ");
+				scanf(" %[^\n]s", newAluno.sobrenome);
+				printf("\tDigite o curso do aluno: ");
+				scanf(" %[^\n]s", newAluno.curso);
+				printf("\tDigite a nota do aluno: ");
+				scanf("%f", &newAluno.nota);
+				insert(newAluno.NUSP);
+
+				// Escrevendo o aluno na árvore
+				fwrite(&newAluno, 1, sizeof(ALUNO), arqDados);
+
+
+
+				// printf("Digite o número USP que deseja inserir: ");
+				// scanf("%d", &chave); 
+				// insert(chave);
 				break;
 			case 2:  // Deletar Nó
 				printf("Digite o número USP que deseja remover: ");
@@ -35,7 +57,19 @@ int main() {
 				scanf("%d", &chave); 
 				RRN_NUSP aux;
 				aux.nusp = chave;
-				search(aux);
+				rrnAux = search(aux);
+				if(rrnAux != -1){
+					
+					printf("\tRRN do Nusp buscado: %ld\n\n", rrnAux);
+					// Fazendo a leitura do aluno no arquivo de dados
+					fseek(arqDados, rrnAux, SEEK_SET);
+					fread(&newAluno, 1, sizeof(ALUNO), arqDados);
+					printaAluno(newAluno);
+
+				} else {
+					printf("O Nusp buscado não existe na árvore\n");
+				} 
+				
 				break;
 			case 4: // Mostrar árvore
 				printf("A Btree está assim:\n\n");
@@ -68,6 +102,13 @@ int showMenu() {
 		scanf("%d", &res);
 	}
 	return res;
+}
+
+void printaAluno(ALUNO a) {
+	printf("\t\tInformações do aluno com Número usp %d:\n", a.NUSP);
+	printf("\tNome Completo: %s %s\n", a.nome, a.sobrenome);
+	printf("\tCurso: %s\n", a.curso);
+	printf("\tNota: %.2f\n", a.nota);
 }
 
 void insert(int nusp) {
@@ -179,7 +220,7 @@ void display(NODE *ptr, int blanks) {
 	}
 }
 
-void search(RRN_NUSP key) {
+long search(RRN_NUSP key) {
 	int pos, i, n;
 	NODE *ptr = root;
 	// printf("Search path:\n");
@@ -192,12 +233,13 @@ void search(RRN_NUSP key) {
 		long RRNaux;
 		pos = searchPos(key, ptr->rrn_nusps, n, &RRNaux);
 		if (pos < n && key.nusp == ptr->rrn_nusps[pos].nusp) {
-			printf("Nusp %d achado na posição %d, com RRN %ld do ultimo nó mostrado\n", key.nusp, i, RRNaux);
-			return;
+			// printf("Nusp %d achado na posição %d, com RRN %ld do ultimo nó mostrado\n", key.nusp, i, RRNaux);
+			return RRNaux;
 		}
 		ptr = ptr->ponteiros[pos];
 	}
-	printf("O NUSP %d não existe na árvore\n", key.nusp);
+	// printf("O NUSP %d não existe na árvore\n", key.nusp);
+	return -1;
 }
 
 int searchPos(RRN_NUSP key,RRN_NUSP *key_arr, int n, long * RRNFound) {
