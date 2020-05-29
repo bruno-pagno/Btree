@@ -3,16 +3,22 @@
 
 #define M 3
 
-typedef struct rrn_nusp {
-	int nusp;
-	long RRN;
+typedef struct rrn_nusp { /* Descrição                       Peso em Bytes */
+	int nusp;			  /* NUSP Do Aluno                           4     */
+	long RRN;			  /* RRN do aluno no arquivo de Dados        8     */
 } RRN_NUSP;
+/* 								Peso total: 12 Bytes					   */
 
-typedef struct _node {
-	int	nElementos;				/* numero de elementos inseridos < M */
-	RRN_NUSP rrn_nusps[M - 1];	/* nusps e rrn dos elementos */
-	struct _node *ponteiros[M];	/* ponteiros dos filhos */
+typedef struct _node {			/* Descrição                               Peso em Bytes */
+	int	nElementos;				/* numero de elementos inseridos < M              4      */
+	RRN_NUSP rrn_nusps[M - 1];	/* nusps e rrn dos elementos                   12*(M-1)  */
+	
+	// struct _node *ponteiros[M];	/* ponteiros dos filhos                        8 * M */
+	
+	int ponteiros[M];			/* ponteiros dos filhos                        8 * M     */
 } NODE;
+/* 								Peso total: 12 Bytes					   				 */
+
 
 typedef struct aluno {			/* Struct do Aluno */
 	int NUSP;
