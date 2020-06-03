@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <btree.h>
+#include <time.h>
 
-NODE *root = NULL;	/* raiz da árvore B */
-long RRN = 0;		/* contador global para indicar o RRN atual */
+long rrnRoot = -1;				/* raiz da árvore B */
+long lastRRN = -1;				/* contador global para indicar o RRN atual */
+long lastRRNIndex =	-1;			/* rrn do arquivo de indice */
+int numInitialInserts = 1024;	/* Numero de alunos inseridos inicialmente */
 
 int main() {
 	/* inicializando os arquivos */
@@ -14,23 +18,31 @@ int main() {
 		exit(0);
 	}
 
+	printf("Tamanho da Struct RRN_NUSP: \t%ld\n", sizeof(RRN_NUSP));
+	printf("Tamanho da Struct NODE: \t%ld\n", sizeof(NODE));
+	printf("Tamanho da Struct ALUNO: \t%ld\n", sizeof(ALUNO));
+
+	/* Inserindo alunos na arvore */
+	fillBTree(arqDados, arqIndex, numInitialInserts);
+	printf("Número de alunos inseridos inicialmente: \t%d\n", numInitialInserts);
+
 	/* Variaveis auxiliares */
-	int opcao = 0;
-	while(opcao != 5) {
+	int opcao = 1;
+	while(opcao >= 1 && opcao <= 4) {
 		opcao = showMenu();
 		switch(opcao) {
 			case 1: /* inserir aluno */
-				insertAluno(arqDados);
+				insertAluno(arqDados, arqIndex);
 				break;
 			case 2:  /* remover aluno */
 				removeAluno();
 				break;
 			case 3: /* buscar aluno */
-				searchAluno(arqDados);				
+				searchAluno(arqDados, arqIndex);
 				break;
 			case 4: /* mostrar a arvore */
-				printf("A Btree está assim:\n\n");
-				display(root, 0);
+				printf("\nA Btree está assim:\n\n");
+				display(arqIndex, rrnRoot, 0);
 				break;
 		}
 	}
@@ -47,74 +59,91 @@ int main() {
 /* exibe o menu com as opcoes */
 int showMenu() {
 	int res = 0;
-	while(res < 1 || res > 5) {		/* evita opcoes invalidas */
-		printf("\n");
-		printf("|======================================|\n");
-		printf("|    Qual Operação deseja realizar?    |\n");
-		printf("|1 - Inserir novo aluno                |\n");
-		printf("|2 - Remover aluno                     |\n");
-		printf("|3 - Buscar por NUSP                   |\n");
-		printf("|4 - Mostrar árvore                    |\n");
-		printf("|5 - Sair do programa                  |\n");
-		printf("|======================================|\n");
-		printf("|Opção: ");
-		scanf("%d", &res);
-	}
+	printf("\n");
+	printf("|======================================|\n");
+	printf("|    Qual Operação deseja realizar?    |\n");
+	printf("|1 - Inserir novo aluno                |\n");
+	printf("|2 - Remover aluno                     |\n");
+	printf("|3 - Buscar por NUSP                   |\n");
+	printf("|4 - Mostrar árvore                    |\n");
+	printf("|5 - Sair do programa                  |\n");
+	printf("|======================================|\n");
+	printf("|Opção: ");
+	scanf("%d", &res);
 	return res;
 }
 
 /* le os dados de um aluno */
 ALUNO scanAluno() {
-	ALUNO newAluno;
+	ALUNO novoAluno;
 
-	printf("\n\tDigite os dados do aluno que deseja Inserir:\n");
+	printf("\n\tDigite os dados do aluno que deseja inserir:\n");
 	printf("\tNUSP do aluno: ");
-	scanf("%d", &newAluno.NUSP);
+	scanf("%d", &novoAluno.NUSP);
 
 	printf("\tNome do aluno: ");
-	scanf(" %[^\n]s", newAluno.nome);
+	scanf(" %[^\n]s", novoAluno.nome);
 
 	printf("\tSobrenome do aluno: ");
-	scanf(" %[^\n]s", newAluno.sobrenome);
+	scanf(" %[^\n]s", novoAluno.sobrenome);
 
 	printf("\tCurso do aluno: ");
-	scanf(" %[^\n]s", newAluno.curso);
+	scanf(" %[^\n]s", novoAluno.curso);
 
 	printf("\tNota do aluno: ");
-	scanf("%f", &newAluno.nota);
+	scanf("%f", &novoAluno.nota);
 
-	return newAluno;
+	return novoAluno;
+}
+
+NODE newNode() {
+	NODE novoNode;
+	novoNode.nElementos = 0;
+
+	int i = 0;
+	for(i = 0; i < M; i++) {
+		novoNode.ponteiros[i] = -1;
+		if(i < M - 1) {
+			novoNode.rrnNUSPs[i].nusp = -1;
+			novoNode.rrnNUSPs[i].RRN = -1;
+		}
+	}
+
+	return novoNode;
 }
 
 /* das inicio a insercao */
-void insertAluno(FILE *arqDados) {
-	ALUNO newAluno = scanAluno();
-	insert(newAluno.NUSP);
+void insertAluno(FILE *arqDados, FILE *arqIndex) {
+	ALUNO novoAluno = scanAluno();
+	/* escrevendo o aluno na arvore de dados*/
+	fseek(arqDados, 0, SEEK_END);
+	fwrite(&novoAluno, sizeof(ALUNO), 1, arqDados);
 
-	/* Escrevendo o aluno na árvore */
-	fwrite(&newAluno, 1, sizeof(ALUNO), arqDados);
+	if(insert(novoAluno.NUSP, arqIndex) != CHAVE_DUPLICADA)
+		lastRRN++;
 }
 
 /* da inicio a busca */
-void searchAluno(FILE *arqDados) {
+void searchAluno(FILE *arqDados, FILE * arqIndex) {
 	int chave = 0;
 	long rrnAux = 0;
-	ALUNO newAluno;
+	ALUNO novoAluno;
 
 	printf("\n\tDigite o NUSP que deseja buscar: ");
 	scanf("%d", &chave);
 	RRN_NUSP aux;
 	aux.nusp = chave;
-	rrnAux = search(aux);
-	if(rrnAux != -1) {					
-		printf("\n\tAluno encontrado no RRN %ld\n\n", rrnAux);
+	
+	rrnAux = search(aux, arqIndex);
+
+	if(rrnAux != -1) {
 		/* Fazendo a leitura do aluno no arquivo de dados */
 		fseek(arqDados, (rrnAux * sizeof(ALUNO)), SEEK_SET);
-		fread(&newAluno, 1, sizeof(ALUNO), arqDados);
-		printAluno(newAluno);
+		fread(&novoAluno, sizeof(ALUNO), 1, arqDados);
+		printAluno(novoAluno);
 
 	} else
-		printf("O Nusp buscado não existe na árvore\n");
+		printf("\tO Número USP buscado não existe na árvore\n");
 }
 
 /* exibe o aluno */
@@ -127,131 +156,200 @@ void printAluno(ALUNO aluno) {
 }
 
 /* recebe o nusp do aluno e insere */
-void insert(int nusp) {
+int insert(int nusp, FILE *arqIndex) {
 	RRN_NUSP novo;
-	novo.nusp = nusp;	/* nusp do novo aluno */
-	novo.RRN = RRN++;	/* rrn do arquivo de dados */
+	novo.nusp = nusp;			/* nusp do novo aluno */
+	novo.RRN = lastRRN + 1;		/* rrn do arquivo de dados */
 
-	NODE *novoNode = NULL;		/* novo node, se necessario */
-	RRN_NUSP chaveCima;			/* chave-pai */
-	int retorno = _insert(root, novo, &chaveCima, &novoNode);
+	int novoNode = -1;				/* novo node, se necessario */
+	RRN_NUSP chavePromovida;		/* chave que vai subir */
+	int retorno = _insert(arqIndex, rrnRoot, novo, &chavePromovida, &novoNode);
 	
-	if (retorno == CHAVE_DUPLICADA)
-		printf("Chave duplicada\n");
-	
-	if (retorno == REALIZAR_INSERCAO) {	/* Primeiro nó */
-		NODE *upRoot = root;
-		root = (NODE*) malloc(sizeof(NODE));
-		root->nElementos = 1;
-		root->rrn_nusps[0] = chaveCima;
-		root->ponteiros[0] = upRoot;
-		root->ponteiros[1] = novoNode;
+	if(retorno == CHAVE_DUPLICADA){
+		printf("\n\tChave duplicada, aluno não inserido!\n");
+		return retorno;
+
+	} else if(retorno == REALIZAR_INSERCAO) {	/* Primeiro nó */
+		long rootAnterior = rrnRoot;
+
+		NODE novoRoot = newNode();
+		novoRoot.nElementos = 1;
+		novoRoot.rrnNUSPs[0] = chavePromovida;
+		novoRoot.ponteiros[0] = rootAnterior;
+		novoRoot.ponteiros[1] = novoNode;
+
+		rrnRoot = ++lastRRNIndex;	/* um novo node e escrito */
+
+		fseek(arqIndex, 0, SEEK_END);
+		fwrite(&novoRoot, sizeof(NODE), 1, arqIndex);
+
+		return SUCESSO;
 	}
+	return retorno;
 }
 
 /* funcao interna que insere na arvore */
-int _insert(NODE *root, RRN_NUSP rrn_nusp, RRN_NUSP *chaveCima, NODE **novoNode) {
-	if (!root) {		/* node mandado eh vazio */
-		*novoNode = NULL;
-		*chaveCima = rrn_nusp;
+int _insert(FILE *arqIndex, int rootRRN, RRN_NUSP novoRRNUSP, RRN_NUSP *chavePromovida, int *rrnNovoNode) {
+	if(rootRRN == -1) {		/* node mandado eh vazio */
+		*rrnNovoNode = -1;
+		*chavePromovida = novoRRNUSP;
 		return REALIZAR_INSERCAO;
 	}
 
-	int nElementos = root->nElementos;
-	long RRNaux = 0;
-	int pos = searchPos(rrn_nusp, root->rrn_nusps, nElementos, &RRNaux);	/* Encontra a posição ideal para o NUSP dentro do nó */
+	NODE *rootNode = (NODE *) malloc(sizeof(NODE));
+	fseek(arqIndex, (rootRRN * sizeof(NODE)), SEEK_SET);
+	fread(rootNode, sizeof(NODE), 1, arqIndex);
 
-	if(pos < nElementos && rrn_nusp.nusp == root->rrn_nusps[pos].nusp)	/* Nesse caso já existe */
+	int nElementos = rootNode->nElementos;
+	long RRNaux = 0;
+	int pos = searchPos(novoRRNUSP, rootNode->rrnNUSPs, nElementos, &RRNaux);	/* Encontra a posição ideal para o NUSP dentro do nó */
+
+	if(pos < nElementos && novoRRNUSP.nusp == rootNode->rrnNUSPs[pos].nusp)		/* Nesse caso já existe */
 		return CHAVE_DUPLICADA;
 
 	RRN_NUSP novaChave;
-	NODE *novoPtr = NULL;
-	int retorno = _insert(root->ponteiros[pos], rrn_nusp, &novaChave, &novoPtr);		/* Desce para o próximo nível recursivamente */
+	int novoPtr = -1;
+	/* Desce para o próximo nível recursivamente */
+	int retorno = _insert(arqIndex, rootNode->ponteiros[pos], novoRRNUSP, &novaChave, &novoPtr);
 	
-	if (retorno != REALIZAR_INSERCAO) return retorno;	/* nao insere nesse node */
+	if(retorno != REALIZAR_INSERCAO) return retorno;	/* nao insere nesse node */
 
 	/*Se o número de NUSPS do NODE for menor que M - 1*/
 	int i = 0;
-	if (nElementos < M - 1) {
-		pos = searchPos(novaChave, root->rrn_nusps, nElementos, &RRNaux);
-		/* shift dos elementos */
-		for (i = nElementos; i > pos; i--) {
-			root->rrn_nusps[i] = root->rrn_nusps[i - 1];
-			root->ponteiros[i + 1] = root->ponteiros[i];
+	if(nElementos < M - 1) {
+		pos = searchPos(novaChave, rootNode->rrnNUSPs, nElementos, &RRNaux);
+		/* shift dos elementos e ponteiros */
+		for(i = nElementos; i > pos; i--) {
+			rootNode->rrnNUSPs[i] = rootNode->rrnNUSPs[i - 1];
+			rootNode->ponteiros[i + 1] = rootNode->ponteiros[i];
 		}
 		
 		/* chave inserida na posicao */
-		root->rrn_nusps[pos] = novaChave;
-		root->ponteiros[pos + 1] = novoPtr;
-		root->nElementos++;		/* incrementa o contador */
+		rootNode->rrnNUSPs[pos] = novaChave;
+		rootNode->ponteiros[pos + 1] = novoPtr;
+		rootNode->nElementos++;		/* incrementa o contador */
+
+		/* sobrescreve o node */
+		fseek(arqIndex, (rootRRN * sizeof(NODE)), SEEK_SET);
+		fwrite(rootNode, sizeof(NODE), 1, arqIndex);
+
 		return SUCESSO;
 	}
 
 	/*Se o nó está cheio e a posição do elemento que deseja inserir é a ultima*/
 	RRN_NUSP ultimaChave;
-	NODE *ultimoPtr = NULL;
-	if (pos == M - 1) {
+	int ultimoPtr = 0;
+	if(pos == M - 1) {
 		ultimaChave = novaChave;
 		ultimoPtr = novoPtr;
 	} else {
-		/* Neste caso o nó está cheio, mas a posição que deseja inserir não é a ultima*/  
-		ultimaChave = root->rrn_nusps[M - 2];
-		ultimoPtr = root->ponteiros[M - 1];
+		/* Neste caso o nó está cheio, mas a posição que deseja inserir não é a ultima*/ 
+		ultimaChave = rootNode->rrnNUSPs[M - 2];
+		ultimoPtr = rootNode->ponteiros[M - 1];
 
-		for (i = M - 2; i > pos; i--) {
-			root->rrn_nusps[i] = root->rrn_nusps[i - 1];
-			root->ponteiros[i + 1] = root->ponteiros[i];
+		for(i = M - 2; i > pos; i--) {
+			rootNode->rrnNUSPs[i] = rootNode->rrnNUSPs[i - 1];
+			rootNode->ponteiros[i + 1] = rootNode->ponteiros[i];
 		}
-		root->rrn_nusps[pos] = novaChave;
-		root->ponteiros[pos + 1] = novoPtr;
+		rootNode->rrnNUSPs[pos] = novaChave;
+		rootNode->ponteiros[pos + 1] = novoPtr;
 	}
 
-	int splitPos = (M - 1) / 2;							/* Posição do nó médio */
-	(*chaveCima) = root->rrn_nusps[splitPos];
-	(*novoNode) = (NODE*) malloc(sizeof(NODE));		/* node da direita */
-	root->nElementos = splitPos;					/* numero de chaves (code esquerdo) */
-	(*novoNode)->nElementos = M - 1 - splitPos;		/* numero de chaves (code direito) */
+	int splitPos = (M - 1) / 2;							/* Posição do node médio */
+	*chavePromovida = rootNode->rrnNUSPs[splitPos];
+	NODE novoNode = newNode();							/* node da direita */
+	rootNode->nElementos = splitPos;					/* numero de chaves (node esquerdo) */
+	novoNode.nElementos = M - 1 - splitPos;				/* numero de chaves (node direito) */
 	
-	for (i = 0; i < (*novoNode)->nElementos; i++) {
-		(*novoNode)->ponteiros[i] = root->ponteiros[i + splitPos + 1];	
-		if (i < (*novoNode)->nElementos - 1)
-			(*novoNode)->rrn_nusps[i] = root->rrn_nusps[i + splitPos + 1];
+	/* copia dos elementos */
+	for(i = 0; i < novoNode.nElementos; i++) {
+		novoNode.ponteiros[i] = rootNode->ponteiros[i + splitPos + 1];	
+		rootNode->ponteiros[i + splitPos + 1] = -1;
 
-		else (*novoNode)->rrn_nusps[i] = ultimaChave;
+		if(i < novoNode.nElementos - 1) {
+			novoNode.rrnNUSPs[i] = rootNode->rrnNUSPs[i + splitPos + 1];
+			rootNode->rrnNUSPs[i + splitPos + 1].nusp = -1;
+			rootNode->rrnNUSPs[i + splitPos + 1].RRN = -1;
+		}
+
+		else novoNode.rrnNUSPs[i] = ultimaChave;
 	}
-	(*novoNode)->ponteiros[(*novoNode)->nElementos] = ultimoPtr;
+
+	/* escreve o novo node */
+	novoNode.ponteiros[novoNode.nElementos] = ultimoPtr;
+	fseek(arqIndex, 0, SEEK_END);
+	fwrite(&novoNode, sizeof(NODE), 1, arqIndex);
+	*rrnNovoNode = ++lastRRNIndex;
+
+	/* reecreve o node root, depois de alterar */
+	fseek(arqIndex, rootRRN * sizeof(NODE), SEEK_SET);
+	fwrite(rootNode, sizeof(NODE), 1, arqIndex);
+
 	return REALIZAR_INSERCAO;
 }
 
 /* exibe a arvore na tela */
-void display(NODE *node, int espacos) {
-	if (node) {
+void display(FILE *arqIndex, long rrnNode, int espacos) {
+	if(rrnNode >= 0) {
+		NODE *nodeAux = (NODE *) malloc(sizeof(NODE));
+		fseek(arqIndex, (rrnNode * sizeof(NODE)), SEEK_SET);
+		fread(nodeAux, sizeof(NODE), 1, arqIndex);
+
 		int i;
-		for (i = 1; i <= espacos; i++)
+		for(i = 1; i <= espacos; i++)
 			printf(" ");
 		
-		for (i = 0; i < node->nElementos; i++)
-			printf("%d(%ld) ", node->rrn_nusps[i].nusp, node->rrn_nusps[i].RRN);
+		for(i = 0; i < nodeAux->nElementos; i++)
+			printf("%d(%ld) ", nodeAux->rrnNUSPs[i].nusp, nodeAux->rrnNUSPs[i].RRN);
 		printf("\n");
 
-		for (i = 0; i <= node->nElementos; i++)
-			display(node->ponteiros[i], espacos + 10);
+		for(i = 0; i <= nodeAux->nElementos; i++)
+			display(arqIndex, nodeAux->ponteiros[i], espacos + 10);
 	}
 }
+/* display para debugar */
+/*
+void display(FILE *arqIndex, long rrnNode, int espacos) {
+	if(rrnNode >= 0 && rrnNode <= lastRRN) {
+		NODE *nodeAux = (NODE *) malloc(sizeof(NODE));
+		fseek(arqIndex, (rrnNode * sizeof(NODE)), SEEK_SET);
+		fread(nodeAux, sizeof(NODE), 1, arqIndex);
+		
+		printf("[RRN = %ld] -> ", rrnNode);
+		int i = 0;
+		for(i = 0; i <= nodeAux->nElementos; i++) {
+			printf("(ptr[%d] = %ld) ", i, nodeAux->ponteiros[i]);
+			if(i < nodeAux->nElementos)
+				printf("|%d| ", nodeAux->rrnNUSPs[i].nusp);
+		}
+		printf(" -> [%d ponteiros]\n", nodeAux->nElementos);
+		
+		int temp = 0;
+		scanf("%d", &temp);
+
+		for(i = 0; i <= nodeAux->nElementos; i++)
+			display(arqIndex, nodeAux->ponteiros[i], espacos + 10);
+	}
+}
+/*
 
 /* busca o node que pode conter o aluno */
-long search(RRN_NUSP chave) {
-	NODE *node = root;
-	/* printf("Search path:\n"); */
-	while (node) {
-		int n = node->nElementos;
-		long RRNaux = 0;
-		int pos = searchPos(chave, node->rrn_nusps, n, &RRNaux);
-		if (pos < n && chave.nusp == node->rrn_nusps[pos].nusp) {
-			/* printf("Nusp %d achado na posição %d, com RRN %ld do ultimo nó mostrado\n", chave.nusp, i, RRNaux); */
-			return RRNaux;
+long search(RRN_NUSP chave, FILE * arqIndex) {
+	if(rrnRoot >= 0) {
+		NODE *node = (NODE *) malloc(sizeof(NODE));
+		int rrnAux = rrnRoot;
+
+		while(rrnAux >= 0) {
+			fseek(arqIndex, (rrnAux * sizeof(NODE)), SEEK_SET);
+			fread(node, sizeof(NODE), 1, arqIndex);
+			int n = node->nElementos;
+			long RRNaux = 0;
+			int pos = searchPos(chave, node->rrnNUSPs, n, &RRNaux);
+			if(pos < n && chave.nusp == node->rrnNUSPs[pos].nusp)
+				return RRNaux;
+			
+			rrnAux = node->ponteiros[pos];
 		}
-		node = node->ponteiros[pos];
 	}
 	return -1;
 }
@@ -272,4 +370,43 @@ void removeAluno() {
 	printf("Digite o número USP que deseja remover: ");
 	scanf("%d", &chave);
 	/* delNode(chave); */
+}
+
+void fillBTree(FILE *arqDados, FILE *arqIndex, int num) {
+	char nomes[26][20] = {
+		"André", "Bruna", "Carlos", "Daniela", "Eugênio", "Flávia", "Guilherme",
+		"Hosana", "Ivan", "Joana", "Kaio", "Luana", "Marcos", "Natália", "Osmar",
+		"Paula", "Quelônio", "Rosana", "Sebastião", "Tatiana", "Ulisses", "Valdirene",
+		"Walace", "Xuxa", "Yago", "Zuleica"
+	};
+
+	char sobrenomes[26][20] = {
+		"Almeida", "Barbosa", "Carvalho", "Degenário", "Escobar", "Firmino", "Godoy",
+		"Holmes", "Inácio", "Januário", "Kastein", "Louzada", "Marostegan", "Nascimento",
+		"Oliveira", "Pedreira", "Quaresma", "Rossi", "Souza", "Teixeira", "Ulrich",
+		"Vasquez", "Wilbert", "Xeque", "York", "Zaganelli"
+	};
+
+	char cursos[11][20] = {
+		"Informática", "Engenharia", "Medicina", "Direito", "Pedagogia", "Química", "Física",
+		"Computação", "Estatística", "Odontologia", "Mecânica"
+	};
+
+	srand(time(NULL));
+	ALUNO novoAluno;
+	int i;
+	for(i = 1; i <= num; i++) {
+		novoAluno.NUSP = i;
+		strcpy(novoAluno.nome, nomes[rand() % 26]);
+		strcpy(novoAluno.sobrenome, sobrenomes[rand() % 26]);
+		strcpy(novoAluno.curso, cursos[rand() % 11]);
+		novoAluno.nota = (float) (rand() % 100) / 10;
+
+		/* escrevendo o aluno na arvore de dados*/
+		fseek(arqDados, 0, SEEK_END);
+		fwrite(&novoAluno, sizeof(ALUNO), 1, arqDados);
+		
+		if(insert(novoAluno.NUSP, arqIndex) != CHAVE_DUPLICADA)
+			lastRRN++;
+	}
 }
