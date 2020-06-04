@@ -1,10 +1,9 @@
 /* 
 Nome: Bruno de Sousa Pagno	NUSP: 11366872
-Nome: João Victor Mello		NUSP: 11218622
+Nome: João Vitor de Mello Gomes	NUSP: 11218622
 Professor: Elaine Parros Machado
 Disciplina: SCC-503
 */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,26 +35,23 @@ int main() {
 
 	/* Variaveis auxiliares */
 	int opcao = 1;
-	while(opcao >= 1 && opcao <= 4) {
+	while(opcao >= 1 && opcao <= 3) {
 		opcao = showMenu();
 		switch(opcao) {
 			case 1: /* inserir aluno */
 				insertAluno(arqDados, arqIndex);
 				break;
-			case 2:  /* remover aluno */
-				removeAluno();
-				break;
-			case 3: /* buscar aluno */
+			case 2: /* buscar aluno */
 				searchAluno(arqDados, arqIndex);
 				break;
-			case 4: /* mostrar a arvore */
-				printf("\nA Btree está assim:\n\n");
+			case 3: /* mostrar a arvore */
+				printf("\n A Btree está assim:\n\n");
 				display(arqIndex, rrnRoot, 0);
 				break;
 		}
 	}
 	
-	printf("Saindo...\n");
+	printf("Fechando arquivos e saindo...\n");
 	
 	/* dar free em tudo no fim da execução */
 	fclose(arqDados);
@@ -71,10 +67,9 @@ int showMenu() {
 	printf("|======================================|\n");
 	printf("|    Qual Operação deseja realizar?    |\n");
 	printf("|1 - Inserir novo aluno                |\n");
-	printf("|2 - Remover aluno                     |\n");
-	printf("|3 - Buscar por NUSP                   |\n");
-	printf("|4 - Mostrar árvore                    |\n");
-	printf("|5 - Sair do programa                  |\n");
+	printf("|2 - Buscar por NUSP                   |\n");
+	printf("|3 - Mostrar árvore                    |\n");
+	printf("|4 - Sair do programa                  |\n");
 	printf("|======================================|\n");
 	printf("|Opção: ");
 	scanf("%d", &res);
@@ -315,31 +310,6 @@ void display(FILE *arqIndex, long rrnNode, int espacos) {
 			display(arqIndex, nodeAux->ponteiros[i], espacos + 10);
 	}
 }
-/* display para debugar */
-/*
-void display(FILE *arqIndex, long rrnNode, int espacos) {
-	if(rrnNode >= 0 && rrnNode <= lastRRN) {
-		NODE *nodeAux = (NODE *) malloc(sizeof(NODE));
-		fseek(arqIndex, (rrnNode * sizeof(NODE)), SEEK_SET);
-		fread(nodeAux, sizeof(NODE), 1, arqIndex);
-		
-		printf("[RRN = %ld] -> ", rrnNode);
-		int i = 0;
-		for(i = 0; i <= nodeAux->nElementos; i++) {
-			printf("(ptr[%d] = %ld) ", i, nodeAux->ponteiros[i]);
-			if(i < nodeAux->nElementos)
-				printf("|%d| ", nodeAux->rrnNUSPs[i].nusp);
-		}
-		printf(" -> [%d ponteiros]\n", nodeAux->nElementos);
-		
-		int temp = 0;
-		scanf("%d", &temp);
-
-		for(i = 0; i <= nodeAux->nElementos; i++)
-			display(arqIndex, nodeAux->ponteiros[i], espacos + 10);
-	}
-}
-/*
 
 /* busca o node que pode conter o aluno */
 long search(RRN_NUSP chave, FILE * arqIndex) {
@@ -370,14 +340,6 @@ int searchPos(RRN_NUSP chave, RRN_NUSP *chaves, int n, long *rrnEncontrado) {
 		
 	*rrnEncontrado = (pos < n) ? chaves[pos].RRN : -1;
 	return pos;
-}
-
-/* da inicio a remocao */
-void removeAluno() {
-	int chave = 0;
-	printf("Digite o número USP que deseja remover: ");
-	scanf("%d", &chave);
-	/* delNode(chave); */
 }
 
 void fillBTree(FILE *arqDados, FILE *arqIndex, int num) {

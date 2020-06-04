@@ -1,6 +1,6 @@
 /* 
 Nome: Bruno de Sousa Pagno	NUSP: 11366872
-Nome: João Victor Mello		NUSP: 11218622
+Nome: João Vitor de Mello Gomes	NUSP: 11218622
 Professor: Elaine Parros Machado
 Disciplina: SCC-503
 */
@@ -45,7 +45,6 @@ ALUNO scanAluno();
 void insertAluno(FILE *,  FILE *);
 void searchAluno(FILE *, FILE *) ;
 void fillBTree(FILE *, FILE *, int);
-void removeAluno();
 void printAluno(ALUNO);
 int insert(int, FILE *);
 int _insert(FILE *, int , RRN_NUSP , RRN_NUSP *, int *) ;
