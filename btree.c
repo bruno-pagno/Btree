@@ -73,7 +73,7 @@ int showMenu() {
 	return res;
 }
 
-/* le os dados de um aluno */
+/* faz a leitura dados de um aluno */
 ALUNO scanAluno() {
 	ALUNO novoAluno;
 
