@@ -1,3 +1,10 @@
+/* 
+Nome: Bruno de Sousa Pagno	NUSP: 11366872
+Nome: João Victor Mello		NUSP: 11218622
+Professor: Elaine Parros Machado
+Disciplina: SCC-503
+*/
+
 #ifndef B_TREE
 #define B_TREE
 
