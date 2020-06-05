@@ -1,8 +1,8 @@
-/* 
-Nome: Bruno de Sousa Pagno	NUSP: 11366872
+/*
+Nome: Bruno de Sousa Pagno		NUSP: 11366872
 Nome: João Vitor de Mello Gomes	NUSP: 11218622
-Professor: Elaine Parros Machado
-Disciplina: SCC-503
+Professor: Elaine Parros Machado de Sousa
+Disciplina: SCC0503
 */
 
 #include <stdio.h>
@@ -246,7 +246,7 @@ int _insert(FILE *arqIndex, int rootRRN, RRN_NUSP novoRRNUSP, RRN_NUSP *chavePro
 		ultimaChave = novaChave;
 		ultimoPtr = novoPtr;
 	} else {
-		/* Neste caso o nó está cheio, mas a posição que deseja inserir não é a ultima*/ 
+		/* Neste caso o nó está cheio, mas a posição que deseja inserir não é a ultima*/
 		ultimaChave = rootNode->rrnNUSPs[M - 2];
 		ultimoPtr = rootNode->ponteiros[M - 1];
 
